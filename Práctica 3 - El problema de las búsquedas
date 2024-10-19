@@ -1,0 +1,172 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#ifdef _WIN32
+    #define LIMPIAR "cls"
+#else
+    #define LIMPIAR "clear"
+#endif
+
+typedef struct {
+    char letra_inicial;
+    int pos_inicial;
+    int pos_final;
+} TablaIndice;
+
+// Busqueda lineal
+int busqueda_lineal(char **lista_claves, int desde, int hasta, char *clave) {
+    for (int i = desde; i <= hasta; i++) {
+        if (strcmp(lista_claves[i], clave) == 0) {
+            return i;  // Devolver la posicion si la clave coincide
+        }
+    }
+    return -1;  // No se encontro la clave
+}
+
+// Busqueda binaria
+int busqueda_binaria(char **lista_claves, int desde, int hasta, char *clave) {
+    while (desde <= hasta) {
+        int medio = desde + (hasta - desde) / 2;
+        int resultado = strcmp(lista_claves[medio], clave);
+        if (resultado == 0) {
+            return medio;  // Clave encontrada
+        } else if (resultado < 0) {
+            desde = medio + 1;  // Buscar en la mitad derecha
+        } else {
+            hasta = medio - 1;  // Buscar en la mitad izquierda
+        }
+    }
+    return -1;  // No se encontro la clave
+}
+
+// Nuevo diseno del menu
+void mostrar_menu() {
+    printf("\n-------------------------------\n");
+    printf("     Sistema de Busqueda        \n");
+    printf("-------------------------------\n");
+    printf("Por favor, selecciona una opcion:\n");
+    printf("1. Busqueda Lineal\n");
+    printf("2. Busqueda Binaria\n");
+    printf("3. Salir\n");
+    printf("-------------------------------\n");
+    printf("Opcion: ");
+}
+
+int main() {
+    FILE *archivo;
+    char clave[7];
+    TablaIndice indice[26];  // Indices para las 26 letras del alfabeto (A-Z)
+    int total_registros = 300000;  // Cantidad de registros en el archivo
+    int opcion_busqueda;  // Eleccion del metodo de busqueda
+    char entrada[10];  // Entrada del usuario
+
+    // Abrir el archivo para lectura
+    archivo = fopen("SALIDA.txt", "r");
+    if (archivo == NULL) {
+        printf("No fue posible abrir el archivo.\n");
+        return 1;
+    }
+
+    // Reservar memoria para almacenar las claves
+    char **lista_claves = (char **)malloc(total_registros * sizeof(char *));
+    for (int i = 0; i < total_registros; i++) {
+        lista_claves[i] = (char *)malloc(7 * sizeof(char));  // 6 caracteres + '\0'
+    }
+
+    // Leer claves del archivo
+    for (int i = 0; i < total_registros; i++) {
+        if (fscanf(archivo, "%s", lista_claves[i]) != 1) {
+            printf("Error leyendo registro en la posicion %d\n", i);
+            break;
+        }
+    }
+    fclose(archivo);
+
+    // Inicializar la tabla de indices
+    for (int i = 0; i < 26; i++) {
+        indice[i].letra_inicial = 'A' + i;  // Asignar letra correspondiente
+        indice[i].pos_inicial = -1;  // Inicializar
+        indice[i].pos_final = -1;    // Inicializar
+    }
+
+    // Establecer los rangos de busqueda para cada letra
+    for (int i = 0; i < total_registros; i++) {
+        char letra = lista_claves[i][0];
+        int idx = letra - 'A';
+
+        if (idx >= 0 && idx < 26) {
+            if (indice[idx].pos_inicial == -1) {
+                indice[idx].pos_inicial = i;  // Definir inicio
+            }
+            indice[idx].pos_final = i;  // Actualizar fin
+        }
+    }
+
+    while (1) {
+        // Limpiar la pantalla
+        system(LIMPIAR);
+
+        // Mostrar menu
+        mostrar_menu();
+        if (scanf("%d", &opcion_busqueda) != 1) {
+            printf("Entrada no valida. Intenta nuevamente.\n");
+            while (getchar() != '\n');  // Limpiar buffer
+            continue;
+        }
+
+        // Salir si elige la opcion 3
+        if (opcion_busqueda == 3) {
+            printf("Saliendo del sistema...\n");
+            break;
+        }
+
+        // Pedir la clave a buscar
+        printf("Introduce la clave a buscar (formato LDDDDD): ");
+        getchar();  // Limpiar buffer de entrada
+        fgets(entrada, sizeof(entrada), stdin);  // Leer entrada del usuario
+
+        // Copiar la entrada a clave, asegurando que sea una cadena valida
+        strncpy(clave, entrada, 6);
+        clave[6] = '\0';  // Terminar la cadena
+
+        // Determinar el rango a partir de la primera letra de la clave
+        char letra_inicial = clave[0];
+        int indice_letra = letra_inicial - 'A';
+        if (indice_letra < 0 || indice_letra > 25 || indice[indice_letra].pos_inicial == -1) {
+            printf("Clave invalida o letra no registrada.\n");
+            continue;
+        }
+
+        // Realizar la busqueda
+        int resultado = -1;
+        if (opcion_busqueda == 1) {
+            // Busqueda lineal
+            resultado = busqueda_lineal(lista_claves, indice[indice_letra].pos_inicial, indice[indice_letra].pos_final, clave);
+        } else if (opcion_busqueda == 2) {
+            // Busqueda binaria
+            resultado = busqueda_binaria(lista_claves, indice[indice_letra].pos_inicial, indice[indice_letra].pos_final, clave);
+        } else {
+            printf("Opcion no valida.\n");
+            continue;
+        }
+
+        // Mostrar resultado
+        if (resultado != -1) {
+            printf("Clave encontrada en la posicion: %d\n", resultado);
+        } else {
+            printf("Clave no encontrada.\n");
+        }
+
+        printf("Presiona ENTER para continuar...");
+        getchar();  // Pausa para continuar
+    }
+
+    // Liberar memoria dinamica
+    for (int i = 0; i < total_registros; i++) {
+        free(lista_claves[i]);
+    }
+    free(lista_claves);
+
+    return 0;
+}
