@@ -1,0 +1,204 @@
+#include <stdio.h> 
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX 100
+
+// Prototipos de funciones
+void llenarArreglo(int arr[], int n);
+void imprimirArreglo(int arr[], int n);
+void ordenarPorInsercion(int arr[], int n);
+void ordenarPorBurbuja(int arr[], int n);
+void ordenarPorSeleccion(int arr[], int n);
+void ordenarPorMezcla(int arr[], int inicio, int fin);
+void merge(int arr[], int inicio, int medio, int fin);
+
+int main() {
+	int opcion, n;
+	int arr[MAX];
+
+	for(;;){
+	// Semilla para generar números aleatorios
+	int random= 1+(rand()%99);
+	
+	
+
+	// Menú para seleccionar el algoritmo de ordenamiento
+	printf("Seleccione el algoritmo de ordenamiento:\n");
+	printf("1. Ordenamiento por Insercion\n");
+	printf("2. Ordenamiento por Burbuja\n");
+	printf("3. Ordenamiento por Seleccion\n");
+	printf("4. Ordenamiento por Mezcla (Merge Sort)\n");
+	printf("5. Salir\n");
+	printf("Ingrese una opcion: ");
+	scanf("%d", &opcion);
+	fflush(stdin);
+
+
+	
+	if(opcion == 5 ){
+		printf("\nHasta pronto... :)\n");
+		return 0; 
+	}
+
+	if(opcion < 1 || opcion > 5){
+            printf("\nOpcion no valida.\n");
+        }else{
+            do{
+                // Definir el tamaño del arreglo
+    	        printf("\nIngrese el tamano del arreglo (numero de elementos): ");
+    	        scanf("%d", &n);
+        		fflush(stdin);
+            }
+				while(n<1 || n>100);
+        	
+
+
+
+	
+	
+
+	// Llenar el arreglo con números aleatorios
+	llenarArreglo(arr, n);
+
+	// Mostrar el arreglo desordenado
+	printf("\nArreglo desordenado:\n");
+	imprimirArreglo(arr, n);
+
+	// Ejecutar el algoritmo de ordenamiento seleccionado
+	switch (opcion) {
+		case 1:
+			ordenarPorInsercion(arr, n);
+			break;
+		case 2:
+			ordenarPorBurbuja(arr, n);
+			break;
+		case 3:
+			ordenarPorSeleccion(arr, n);
+			break;
+		case 4:
+			ordenarPorMezcla(arr, 0, n - 1);
+			break;
+		default:
+			printf("Opcion no valida.\n");
+			return 1;
+	}
+
+	// Mostrar el arreglo ordenado
+	printf("\nArreglo ordenado:\n");
+	imprimirArreglo(arr, n);
+
+	return 0;
+}
+	}
+}
+
+// Llenar el arreglo con números aleatorios entre 1 y 99
+void llenarArreglo(int arr[], int n) {
+	for (int i = 0; i < n; i++) {
+		arr[i] = rand() % 99 + 1;
+	}
+}
+
+// Imprimir el arreglo
+void imprimirArreglo(int arr[], int n) {
+	for (int i = 0; i < n; i++) {
+		printf("%d ", arr[i]);
+	}
+	printf("\n");
+}
+
+// Algoritmo de Ordenamiento por Insercion
+void ordenarPorInsercion(int arr[], int n) {
+	for (int i = 1; i < n; i++) {
+		int clave = arr[i];
+		int j = i - 1;
+		while (j >= 0 && arr[j] > clave) {
+			arr[j + 1] = arr[j];
+			j = j - 1;
+		}
+		arr[j + 1] = clave;
+	}
+}
+
+// Algoritmo de Ordenamiento por Burbuja
+void ordenarPorBurbuja(int arr[], int n) {
+	for (int i = 0; i < n - 1; i++) {
+		for (int j = 0; j < n - i - 1; j++) {
+			if (arr[j] > arr[j + 1]) {
+				int temp = arr[j];
+				arr[j] = arr[j + 1];
+				arr[j + 1] = temp;
+			}
+		}
+	}
+}
+
+// Algoritmo de Ordenamiento por Seleccion
+void ordenarPorSeleccion(int arr[], int n) {
+	for (int i = 0; i < n - 1; i++) {
+		int min_idx = i;
+		for (int j = i + 1; j < n; j++) {
+			if (arr[j] < arr[min_idx]) {
+				min_idx = j;
+			}
+		}
+		int temp = arr[min_idx];
+		arr[min_idx] = arr[i];
+		arr[i] = temp;
+	}
+}
+
+// Algoritmo de Ordenamiento por Mezcla (Merge Sort)
+void ordenarPorMezcla(int arr[], int inicio, int fin) {
+	if (inicio < fin) {
+		int medio = inicio + (fin - inicio) / 2;
+
+		// Ordenar las dos mitades
+		ordenarPorMezcla(arr, inicio, medio);
+		ordenarPorMezcla(arr, medio + 1, fin);
+
+		// Mezclar las dos mitades
+		merge(arr, inicio, medio, fin);
+	}
+}
+
+// Función para mezclar dos subarreglos ordenados
+void merge(int arr[], int inicio, int medio, int fin) {
+	int n1 = medio - inicio + 1;
+	int n2 = fin - medio;
+
+	int izquierda[n1], derecha[n2];
+
+	for (int i = 0; i < n1; i++) {
+		izquierda[i] = arr[inicio + i];
+	}
+	for (int j = 0; j < n2; j++) {
+		derecha[j] = arr[medio + 1 + j];
+	}
+
+	int i = 0, j = 0, k = inicio;
+
+	while (i < n1 && j < n2) {
+		if (izquierda[i] <= derecha[j]) {
+			arr[k] = izquierda[i];
+			i++;
+		} else {
+			arr[k] = derecha[j];
+			j++;
+		}
+		k++;
+	}
+
+	while (i < n1) {
+		arr[k] = izquierda[i];
+		i++;
+		k++;
+	}
+
+	while (j < n2) {
+		arr[k] = derecha[j];
+		j++;
+		k++;
+	}
+}
