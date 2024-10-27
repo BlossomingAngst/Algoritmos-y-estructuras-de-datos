@@ -1,0 +1,138 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+void camino(int **arr, int filas, int columnas);
+int recorrer(int x, int y, int **arr, int **recorrido, int filas, int columnas, int *salidaX, int *salidaY);
+
+int main() {
+    char laberinto[100];
+    int i, j;
+    printf("Ingrese el nombre del archivo junto con la extension de el archivo (.txt): ");
+    scanf("%99s", laberinto);
+
+    FILE *archivo = fopen(laberinto, "r");
+    if (archivo == NULL) {
+        printf("No se pudo abrir el archivo\n");
+        return 1;
+    }
+
+    int filas = 0, columnas = 0, valor;
+    char coma;
+
+    while (fscanf(archivo, "%d%c", &valor, &coma) == 2) {
+        if (filas == 0) columnas++;
+        if (coma == '\n') filas++;
+    }
+    if (columnas > 0) filas++;
+
+    rewind(archivo);
+
+    int* matriz[filas];
+    for (i = 0; i < filas; i++) {
+        matriz[i] = (int*)malloc(columnas * sizeof(int));
+    }
+
+    // Llenar nuestra matriz mxn
+    for (i = 0; i < filas; i++) {
+        for (j = 0; j < columnas; j++) {
+            fscanf(archivo, "%d", &matriz[i][j]);
+            if (j < columnas - 1) fscanf(archivo, "%c", &coma);
+        }
+    }
+    fclose(archivo);
+
+    // Impresión de matriz para pruebas
+    printf("\n");
+    printf("Laberinto\n");
+    for (i = 0; i < filas; i++) {
+        for (j = 0; j < columnas; j++) {
+            if (matriz[i][j] == 1) printf("%c", 219);
+            else printf(" ");
+        }
+        printf("\n");
+    }
+
+    camino(matriz, filas, columnas);
+
+    for (i = 0; i < filas; i++) {
+        free(matriz[i]);
+    }
+
+    return 0;
+}
+
+// Nos da el camino correcto donde inicia y donde termina el laberinto
+void camino(int **arr, int filas, int columnas) {
+    int *recorrido[filas];
+    int i, j, m;
+    int salidaX = -1, salidaY = -1;
+
+    for (i = 0; i < filas; i++) {
+        recorrido[i] = (int *)calloc(columnas, sizeof(int));
+    }
+
+        // Buscar inicios en la fila superior
+    for (i = 0; i < columnas; i++) {
+        if (arr[0][i] == 0) {
+            printf("El inicio está en: 0, %d\n", i);
+            if (recorrer(0, i, arr, recorrido, filas, columnas, &salidaX, &salidaY)) {
+                break; // Salimos al encontrar el camino
+            }
+        }
+    }
+
+    // Buscar inicios en la columna izquierda
+    for (i = 0; i < filas; i++) {
+        if (arr[i][0] == 0) {
+            printf("\nEl inicio está en: %d, 0\n", i);
+            if (recorrer(i, 0, arr, recorrido, filas, columnas, &salidaX, &salidaY)) {
+                break; // Salimos al encontrar el camino
+            }
+        }
+    }
+
+    // Impresión del recorrido
+    if (salidaX != -1 && salidaY != -1) {
+        printf("Salida encontrada en: %d, %d\n", salidaX, salidaY);
+    } else {
+        printf("No se encontró salida.\n");
+    }
+
+    for (i = 0; i < filas; i++) {
+        for (j = 0; j < columnas; j++) {
+            if (arr[i][j] == 1) printf("%c", 219);
+            else if (arr[i][j] == 0 && recorrido[i][j] == 1) printf(".");
+            else printf(" ");
+        }
+        printf("\n");
+    }
+
+    for (m = 0; m < filas; m++) {
+        free(recorrido[m]);
+    }
+}
+
+// Recorre todo el laberinto hasta encontrar la salida en las casillas posibles
+int recorrer(int x, int y, int **arr, int **recorrido, int filas, int columnas, int *salidaX, int *salidaY) {
+    if (x < 0 || x >= filas || y < 0 || y >= columnas || arr[x][y] == 1 || recorrido[x][y] == 1) {
+        return 0;
+    }
+
+    recorrido[x][y] = 1;
+
+    // Verificar si estamos en la salida
+    if (y == columnas - 1 || x == filas - 1) {
+        *salidaX = x;
+        *salidaY = y;
+        return 1; // Se encontró salida
+    }
+
+    // Intentar moverse en las 4 direcciones
+    if (recorrer(x + 1, y, arr, recorrido, filas, columnas, salidaX, salidaY)) return 1;  // Abajo
+    if (recorrer(x - 1, y, arr, recorrido, filas, columnas, salidaX, salidaY)) return 1;  // Arriba
+    if (recorrer(x, y + 1, arr, recorrido, filas, columnas, salidaX, salidaY)) return 1;  // Derecha
+    if (recorrer(x, y - 1, arr, recorrido, filas, columnas, salidaX, salidaY)) return 1;  // Izquierda
+
+    recorrido[x][y] = 0; // Marcar como no recorrido si no se encontró salida
+    return 0;
+}
