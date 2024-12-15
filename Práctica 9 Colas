@@ -1,0 +1,199 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+// Define el número máximo de dígitos permitidos para los números ingresados
+#define MAX_DIGITS 25
+
+// Definición de un nodo para las estructuras de datos (colas y pilas)
+typedef struct Node {
+    char digit;           // Almacena un dígito como carácter
+    struct Node* next;    // Puntero al siguiente nodo
+} Node;
+
+// Definición de la estructura de una cola
+typedef struct Queue {
+    Node* front;          // Puntero al frente de la cola
+    Node* rear;           // Puntero al final de la cola
+} Queue;
+
+// Definición de la estructura de una pila
+typedef struct Stack {
+    Node* top;            // Puntero al elemento superior de la pila
+} Stack;
+
+// Declaración de prototipos de funciones para manejo de colas, pilas y otras operaciones
+void initQueue(Queue* q);
+void enqueue(Queue* q, char digit);
+char dequeue(Queue* q);
+int isEmptyQueue(Queue* q);
+void reverseQueue(Queue* q);
+
+void initStack(Stack* s);
+void push(Stack* s, char digit);
+char pop(Stack* s);
+int isEmptyStack(Stack* s);
+
+int isValidNumber(const char* num);
+void addQueuesStepByStep(Queue* q1, Queue* q2, Stack* resultStack);
+
+// Funciones para manejo de colas
+void initQueue(Queue* q) {
+    q->front = NULL;  // Inicializa la cola vacía
+    q->rear = NULL;
+}
+
+void enqueue(Queue* q, char digit) {
+    Node* newNode = (Node*)malloc(sizeof(Node));  // Crea un nuevo nodo en memoria dinámica
+    newNode->digit = digit;                      // Asigna el dígito al nodo
+    newNode->next = NULL;                        // El siguiente nodo es NULL
+
+    if (q->rear == NULL) {                       // Si la cola está vacía
+        q->front = q->rear = newNode;            // Ambos punteros apuntan al nuevo nodo
+        return;
+    }
+    q->rear->next = newNode;                     // Agrega el nodo al final de la cola
+    q->rear = newNode;                           // Actualiza el puntero final
+}
+
+char dequeue(Queue* q) {
+    if (q->front == NULL) {                      // Si la cola está vacía
+        printf("La cola está vacía.\n");
+        return '\0';                             // Retorna un carácter nulo
+    }
+    Node* temp = q->front;                       // Guarda el nodo del frente
+    char digit = temp->digit;                    // Obtiene el dígito almacenado
+    q->front = q->front->next;                   // Avanza el frente de la cola
+
+    if (q->front == NULL) {                      // Si la cola queda vacía
+        q->rear = NULL;
+    }
+    free(temp);                                  // Libera la memoria del nodo eliminado
+    return digit;
+}
+
+int isEmptyQueue(Queue* q) {
+    return q->front == NULL;                     // Retorna 1 si la cola está vacía
+}
+
+//Invertir colas
+
+void reverseQueue(Queue* q) {
+    Stack tempStack;
+    initStack(&tempStack);                       // Crea una pila temporal
+
+    while (!isEmptyQueue(q)) {                   // Vacía la cola en la pila
+        push(&tempStack, dequeue(q));
+    }
+
+    while (!isEmptyStack(&tempStack)) {          // Vuelve a llenar la cola desde la pila
+        enqueue(q, pop(&tempStack));
+    }
+}
+
+// Funciones para manejo de pilas
+void initStack(Stack* s) {
+    s->top = NULL;                               // Inicializa la pila vacía
+}
+
+void push(Stack* s, char digit) {
+    Node* newNode = (Node*)malloc(sizeof(Node)); // Crea un nuevo nodo en memoria dinámica
+    newNode->digit = digit;                      // Asigna el dígito al nodo
+    newNode->next = s->top;                      // Coloca el nodo en la cima
+    s->top = newNode;
+}
+
+char pop(Stack* s) {
+    if (s->top == NULL) {                        // Si la pila está vacía
+        printf("La pila está vacía.\n");
+        return '\0';
+    }
+    Node* temp = s->top;                         // Guarda el nodo superior
+    char digit = temp->digit;                    // Obtiene el dígito almacenado
+    s->top = s->top->next;                       // Avanza al siguiente nodo
+    free(temp);                                  // Libera la memoria del nodo eliminado
+    return digit;
+}
+
+int isEmptyStack(Stack* s) {
+    return s->top == NULL;                       // Retorna 1 si la pila está vacía
+}
+
+// Valida si una cadena representa un número válido
+int isValidNumber(const char* num) {
+    if (strlen(num) > MAX_DIGITS) return 0;      // Verifica que no exceda el máximo permitido
+    for (int i = 0; num[i] != '\0'; i++) {
+        if (!isdigit(num[i])) return 0;          // Verifica que todos los caracteres sean dígitos
+    }
+    return 1;                                    // Retorna 1 si es válido
+}
+
+// Suma los números representados por dos colas y guarda el resultado en una pila
+void addQueuesStepByStep(Queue* q1, Queue* q2, Stack* resultStack) {
+    int carry = 0;                               // Inicializa el acarreo
+    int sum = 0;
+
+    printf("\n--- Suma explicada por partes ---\n");
+    printf("Digito 1 | Digito 2 | Suma | Acarreo\n");
+    printf("------------------------------------\n");
+
+    while (!isEmptyQueue(q1) || !isEmptyQueue(q2) || carry > 0) {
+        int digit1 = !isEmptyQueue(q1) ? dequeue(q1) - '0' : 0; // Obtiene el siguiente dígito de q1
+        int digit2 = !isEmptyQueue(q2) ? dequeue(q2) - '0' : 0; // Obtiene el siguiente dígito de q2
+
+        sum = digit1 + digit2 + carry;           // Calcula la suma de los dígitos y el acarreo
+        carry = sum / 10;                        // Calcula el nuevo acarreo
+
+        printf("   %d      +   %d     =  %d   (Acarreo: %d)\n", digit1, digit2, sum % 10, carry);
+
+        push(resultStack, (sum % 10) + '0');     // Almacena el dígito resultante en la pila
+    }
+}
+
+// Función principal
+int main() {
+    char num1[MAX_DIGITS + 1], num2[MAX_DIGITS + 1];
+    Queue queue1, queue2;
+    Stack resultStack;
+
+    initQueue(&queue1);                          // Inicializa la primera cola
+    initQueue(&queue2);                          // Inicializa la segunda cola
+    initStack(&resultStack);                     // Inicializa la pila para el resultado
+
+    printf("Ingrese el primer numero positivo de hasta %d digitos: ", MAX_DIGITS);
+    scanf("%s", num1);
+
+    while (!isValidNumber(num1)) {               // Valida que el número ingresado sea válido
+        printf("Numero invalido. Intentelo de nuevo: ");
+        scanf("%s", num1);
+    }
+
+    printf("Ingrese el segundo numero positivo de hasta %d digitos: ", MAX_DIGITS);
+    scanf("%s", num2);
+
+    while (!isValidNumber(num2)) {               // Valida el segundo número
+        printf("Numero invalido. Intentelo de nuevo: ");
+        scanf("%s", num2);
+    }
+
+    for (int i = 0; i < strlen(num1); i++) {     // Inserta los dígitos del primer número en la cola
+        enqueue(&queue1, num1[i]);
+    }
+    for (int i = 0; i < strlen(num2); i++) {     // Inserta los dígitos del segundo número en la cola
+        enqueue(&queue2, num2[i]);
+    }
+
+    reverseQueue(&queue1);                       // Invierte la cola 1 (para procesar de derecha a izquierda)
+    reverseQueue(&queue2);                       // Invierte la cola 2
+
+    addQueuesStepByStep(&queue1, &queue2, &resultStack); // Realiza la suma y almacena el resultado en la pila
+
+    printf("\nResultado final: ");
+    while (!isEmptyStack(&resultStack)) {        // Imprime los dígitos de la pila (forman el número final)
+        printf("%c", pop(&resultStack));
+    }
+    printf("\n");
+
+    return 0;
+}
