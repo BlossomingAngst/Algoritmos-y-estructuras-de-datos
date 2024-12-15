@@ -1,0 +1,190 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <math.h>
+
+// Definición de la estructura de la pila
+typedef struct Stack {
+    int *arr; // Cambiado a int para manejar enteros en evaluaciones
+    int top;
+    int capacity;
+} Stack;
+
+// Función para crear una pila
+Stack* createStack(int capacity) {
+    Stack* stack = (Stack*) malloc(sizeof(Stack)); // Cambiar a Stack*
+    if (!stack) {
+        printf("Error al asignar memoria para la pila.\n");
+        exit(EXIT_FAILURE);
+    }
+    stack->capacity = capacity;
+    stack->top = -1;
+    stack->arr = (int*) malloc(stack->capacity * sizeof(int));
+    if (!stack->arr) {
+        printf("Error al asignar memoria para el arreglo de la pila.\n");
+        exit(EXIT_FAILURE);
+    }
+    return stack;
+}
+
+// Función para verificar si la pila está vacía
+int isEmpty(Stack *stack) {
+    return stack->top == -1;
+}
+
+// Función para agregar un elemento a la pila
+void push(Stack *stack, int value) {
+    if (stack->top == stack->capacity - 1) {
+        printf("Pila llena!\n");
+        return;
+    }
+    stack->arr[++stack->top] = value;
+}
+
+// Función para quitar un elemento de la pila
+int pop(Stack *stack) {
+    if (isEmpty(stack)) {
+        printf("Pila vacía!\n");
+        return -1;
+    }
+    return stack->arr[stack->top--];
+}
+
+// Función para obtener el elemento superior de la pila sin quitarlo
+int peek(Stack *stack) {
+    if (isEmpty(stack)) {
+        return -1;
+    }
+    return stack->arr[stack->top];
+}
+
+// Función para determinar la precedencia de los operadores
+int precedence(char op) {
+    switch (op) {
+        case '+': case '-': return 1;
+        case '*': case '/': return 2;
+        case '^': return 3;
+        default: return 0; // Paréntesis o no operador
+    }
+}
+
+// Función para verificar si es un operador
+int isOperator(char c) {
+    return c == '+' || c == '-' || c == '*' || c == '/' || c == '^';
+}
+
+// Verificar balanceo de paréntesis
+int checkBalance(char *expr) {
+    Stack *stack = createStack(strlen(expr));
+    for (int i = 0; expr[i] != '\0'; i++) {
+        if (expr[i] == '(') {
+            push(stack, '(');
+        } else if (expr[i] == ')') {
+            if (isEmpty(stack)) {
+                free(stack->arr);
+                free(stack);
+                return 0; // No balanceado
+            }
+            pop(stack);
+        }
+    }
+    int balanced = isEmpty(stack);
+    free(stack->arr);
+    free(stack);
+    return balanced;
+}
+
+// Conversión de infija a postfija
+void infixToPostfix(char *infix, char *postfix) {
+    Stack *stack = createStack(strlen(infix));
+    int j = 0; // Índice para la salida
+
+    for (int i = 0; infix[i] != '\0'; i++) {
+        char c = infix[i];
+
+        if (isdigit(c)) { // Si es operando, agregar a la salida
+            while (isdigit(infix[i])) { // Manejar números de más de un dígito
+                postfix[j++] = infix[i++];
+            }
+            postfix[j++] = ' '; // Separador de números
+            i--; // Retroceder para evaluar correctamente
+        } else if (c == '(') { // Si es paréntesis izquierdo, poner en la pila
+            push(stack, c);
+        } else if (c == ')') { // Si es paréntesis derecho, vaciar hasta '('
+            while (!isEmpty(stack) && peek(stack) != '(') {
+                postfix[j++] = pop(stack);
+            }
+            pop(stack); // Quitar el '('
+        } else if (isOperator(c)) { // Si es operador
+            while (!isEmpty(stack) && precedence(peek(stack)) >= precedence(c)) {
+                postfix[j++] = pop(stack);
+            }
+            push(stack, c);
+        }
+    }
+
+    // Vaciar la pila
+    while (!isEmpty(stack)) {
+        postfix[j++] = pop(stack);
+    }
+    postfix[j] = '\0'; // Terminar la cadena
+    free(stack->arr);
+    free(stack);
+}
+
+// Evaluación de una expresión postfija
+int evaluatePostfix(char *postfix) {
+    Stack *stack = createStack(strlen(postfix));
+    int i = 0;
+
+    while (postfix[i] != '\0') {
+        if (isdigit(postfix[i])) { // Si es operando, meter a la pila
+            int num = 0;
+            while (isdigit(postfix[i])) { // Manejar números de más de un dígito
+                num = num * 10 + (postfix[i++] - '0');
+            }
+            push(stack, num);
+        } else if (isOperator(postfix[i])) { // Si es operador
+            int b = pop(stack);
+            int a = pop(stack);
+            switch (postfix[i]) {
+                case '+': push(stack, a + b); break;
+                case '-': push(stack, a - b); break;
+                case '*': push(stack, a * b); break;
+                case '/': push(stack, a / b); break;
+                case '^': push(stack, (int)pow(a, b)); break;
+            }
+        }
+        i++;
+    }
+
+    int result = pop(stack);
+    free(stack->arr);
+    free(stack);
+    return result;
+}
+
+int main() {
+    char expr[100], postfix[200];
+
+    printf("Introduce una expresion infija: ");
+    fgets(expr, sizeof(expr), stdin);
+    expr[strcspn(expr, "\n")] = '\0'; // Eliminar el salto de línea
+
+    // Verificar balanceo de paréntesis
+    if (!checkBalance(expr)) {
+        printf("Los parentesis NO están balanceados.\n");
+        return 1;
+    }
+
+    // Convertir infija a postfija
+    infixToPostfix(expr, postfix);
+    printf("Expresion en notacion postfija: %s\n", postfix);
+
+    // Evaluar expresión postfija
+    int result = evaluatePostfix(postfix);
+    printf("Resultado de la expresion: %d\n", result);
+
+    return 0;
+}
